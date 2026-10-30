@@ -1,0 +1,142 @@
+[
+  {
+    "id": "BUG-001",
+    "description": "Correct password is compared to the stored hash as plaintext",
+    "actual": {
+      "status": 400,
+      "body": {
+        "message": "Invalid email or password"
+      }
+    }
+  },
+  {
+    "id": "BUG-002",
+    "description": "First-time enrollment fails",
+    "actual": {
+      "status": 400,
+      "body": {
+        "message": "Already enrolled in this course"
+      }
+    }
+  },
+  {
+    "id": "BUG-003",
+    "description": "Invalid JWT reaches controller instead of returning 401",
+    "actual": {
+      "status": 404,
+      "body": {
+        "message": "Cannot read properties of undefined (reading 'id')"
+      }
+    }
+  },
+  {
+    "id": "BUG-004",
+    "description": "Invalid admin key is accepted and silently creates a student",
+    "actual": {
+      "status": 201,
+      "role": "student"
+    }
+  },
+  {
+    "id": "BUG-005",
+    "description": "Perfect quiz score returns 10 percent",
+    "actual": {
+      "status": 200,
+      "body": {
+        "_id": "6ae50c05139e8a31ba599bb9",
+        "total": 1,
+        "score": 1,
+        "percent": 10,
+        "createdAt": "2026-10-30T21:28:37.662Z"
+      }
+    }
+  },
+  {
+    "id": "BUG-006",
+    "description": "Out-of-range quiz answer is accepted",
+    "actual": {
+      "status": 200,
+      "body": {
+        "_id": "6ae50c05139e8a31ba599bc1",
+        "total": 1,
+        "score": 0,
+        "percent": 0,
+        "createdAt": "2026-10-30T21:28:37.672Z"
+      }
+    }
+  },
+  {
+    "id": "BUG-007",
+    "description": "Invalid lesson assignment is accepted",
+    "actual": {
+      "status": 201,
+      "lessonId": "6ae50c05139e8a31ba599bc3"
+    }
+  },
+  {
+    "id": "BUG-008",
+    "description": "Grade above 100 is accepted",
+    "actual": {
+      "status": 200,
+      "grade": 101
+    }
+  },
+  {
+    "id": "BUG-009",
+    "description": "Admin course filter is ignored",
+    "actual": {
+      "status": 200,
+      "count": 2
+    }
+  },
+  {
+    "id": "BUG-010",
+    "description": "Another student can complete a lesson in someone else enrollment",
+    "actual": {
+      "status": 200,
+      "percent": 100
+    }
+  },
+  {
+    "id": "BUG-011",
+    "description": "Arbitrary lessons are accepted and progress exceeds 100",
+    "actual": {
+      "status": 200,
+      "percent": 200
+    }
+  },
+  {
+    "id": "BUG-012",
+    "description": "Required course title can be cleared",
+    "actual": {
+      "status": 200,
+      "title": ""
+    }
+  },
+  {
+    "id": "BUG-013",
+    "description": "Banned student existing token still works",
+    "actual": {
+      "status": 200,
+      "isBanned": true
+    }
+  },
+  {
+    "id": "BUG-014",
+    "description": "Demoted admin existing token still accesses admin endpoints",
+    "actual": {
+      "status": 200,
+      "count": 2
+    }
+  },
+  {
+    "id": "BUG-015",
+    "description": "Field validation details are omitted",
+    "actual": {
+      "status": 400,
+      "body": {
+        "message": "Validation error"
+      }
+    }
+  }
+]

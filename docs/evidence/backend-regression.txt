@@ -1,0 +1,37 @@
+
+> coursemaster_backend@1.0.0 test
+> node --test tests/*.test.js
+
+MongoDB Connected ✅
+⚠️ Email service not configured. Skipping welcome email.
+▶ CourseMaster HTTP regression suite
+  ✔ Registration defaults to student and ignores an injected role (400.7104ms)
+  ✔ Correct hashed password logs in; incorrect password fails (151.2589ms)
+⚠️ Email service not configured. Skipping welcome email.
+  ✔ Admin registration key is checked (141.2154ms)
+  ✔ Invalid token returns 401; student cannot use admin API (13.8593ms)
+  ✔ Validation response includes field errors (5.8567ms)
+  ✔ Admin creates a course with a real batch and lesson (48.783ms)
+  ✔ First enrollment succeeds and duplicates fail (163.0481ms)
+  ✔ My enrollments returns an array containing the course (36.7032ms)
+  ✔ Invalid lessons are rejected; completion is persisted and idempotent (100.6692ms)
+⚠️ Email service not configured. Skipping welcome email.
+  ✔ A student cannot modify another student enrollment (76.4834ms)
+  ✔ Quiz percentage uses a 0–100 scale and retakes update stats (41.1025ms)
+  ✔ Malformed, missing, or out-of-range quiz answers fail (120.877ms)
+  ✔ Assignment validates course membership, answer, and link protocol (40.9233ms)
+  ✔ Admin assignment filtering uses course and forwards query (75.3572ms)
+  ✔ Invalid assignment grades and statuses are rejected (53.1842ms)
+  ✔ Invalid course updates run schema validation (10.1323ms)
+  ✔ Banned users cannot log in or use existing tokens (14.4476ms)
+  ✔ Role changes immediately affect existing tokens (6.7195ms)
+  ✔ CORS preflight permits PATCH and DELETE (3.3277ms)
+✔ CourseMaster HTTP regression suite (1778.3587ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10861.8419

@@ -433,3 +433,7 @@ Tests cover authentication, authorization, registration keys, validation errors,
 ### Deployment
 
 Use your own hosting account and MongoDB instance. Set production environment variables in the host rather than committing them. The existing Vercel configuration is retained. Configure the frontend to use the deployed API URL ending in `/api`. No production deployment has been performed as part of this local verification.
+
+## Bug report and evidence
+
+The full English [bug report](docs/bug-report.html), [plain-text version](docs/bug-report.txt), original API evidence, and automated check transcripts are in [docs](docs). Verification limitations are recorded explicitly. The assignment still requires a Google Docs copy with reviewer access.

@@ -1,0 +1,207 @@
+CourseMaster Assignment 4 Bug Report
+Prepared for mdshamim-mern on 31 October 2026
+
+This report records 29 reproducible or source-substantiated issues in CourseMaster, their fixes, and the available verification evidence. Backend behavior was tested against an isolated local MongoDB instance. Frontend checks use the real modules and component rendering. Eight interaction issues and pixel-level layouts still need browser verification because browser automation was unavailable. No claim of complete browser verification is made.
+
+BUG-001 Valid passwords cannot log in
+1. Bug ID and title: BUG-001 — Valid passwords cannot log in
+2. Location and steps: backend/src/services/auth.service.js. Register a student, then submit the same email and password to POST /api/auth/login.
+3. Expected versus actual: A valid password should authenticate. The original returns 400 Invalid email or password because plaintext is compared to the hash.
+4. Severity and evidence: High; P1. HTTP regression: correct password succeeds and incorrect password fails.
+5. Fix and verification status: Use await bcrypt.compare. Fixed & Verified
+
+BUG-002 First enrollment is rejected
+1. Bug ID and title: BUG-002 — First enrollment is rejected
+2. Location and steps: backend/src/services/enrollment.service.js. Use a valid student token and POST /api/enrollments/:courseId for a course the student has not joined.
+3. Expected versus actual: First enrollment should return 201. The original returns Already enrolled in this course when no enrollment exists.
+4. Severity and evidence: High; P1. HTTP regression: first enrollment 201; duplicate enrollment 400.
+5. Fix and verification status: Reject an existing enrollment, then create the new enrollment. Fixed & Verified
+
+BUG-003 Invalid tokens reach protected controllers
+1. Bug ID and title: BUG-003 — Invalid tokens reach protected controllers
+2. Location and steps: backend/src/middlewares/authMiddleware.js. Send an invalid Bearer token to GET /api/auth/me.
+3. Expected versus actual: Invalid authentication should return 401. The original calls next and returns a controller error with status 404.
+4. Severity and evidence: High; P1. HTTP regression: invalid token returns 401.
+5. Fix and verification status: Return 401 immediately when JWT verification fails. Fixed & Verified
+
+BUG-004 Admin registration key is ignored
+1. Bug ID and title: BUG-004 — Admin registration key is ignored
+2. Location and steps: backend/src/services/auth.service.js. Register with an invalid adminKey, then register another user with the configured valid admin key.
+3. Expected versus actual: An invalid key should fail; a valid key should create an admin. The original silently creates a student even for an invalid key.
+4. Severity and evidence: High; P2. HTTP regression covers valid and invalid keys and injected role rejection. The original route schema already stripped role; no HTTP role-escalation claim is made.
+5. Fix and verification status: Validate adminKey on the server and derive the role from that validation. Fixed & Verified
+
+BUG-005 Quiz percentage is ten times too small
+1. Bug ID and title: BUG-005 — Quiz percentage is ten times too small
+2. Location and steps: backend/src/services/quiz.service.js. Submit correct answers to every question through POST /api/quizzes/submit.
+3. Expected versus actual: A perfect score should return 100 percent. The original returns 10 percent.
+4. Severity and evidence: High; P1. HTTP regression checks perfect score, zero score, retakes, and latest-attempt statistics.
+5. Fix and verification status: Multiply the score ratio by 100. Fixed & Verified
+
+BUG-006 Malformed quiz answers are accepted
+1. Bug ID and title: BUG-006 — Malformed quiz answers are accepted
+2. Location and steps: backend/src/services/quiz.service.js. Submit an answer array containing option index 999, a negative index, a string, or the wrong number of answers.
+3. Expected versus actual: Invalid answer structures should return 400. The original accepts out-of-range answers and stores a score.
+4. Severity and evidence: Medium; P2. HTTP regression covers absent, empty, oversized, negative, string, and out-of-range answers.
+5. Fix and verification status: Require exactly one integer option index in range for each question. Fixed & Verified
+
+BUG-007 Assignments can reference nonexistent lessons
+1. Bug ID and title: BUG-007 — Assignments can reference nonexistent lessons
+2. Location and steps: backend/src/services/assignment.service.js. While enrolled, submit an assignment with a newly generated lesson identifier that is not in the course.
+3. Expected versus actual: The request should fail. The original stores a submission with status 201.
+4. Severity and evidence: High; P2. HTTP regression rejects nonexistent lessons, blank answers, and javascript links; a valid answer succeeds.
+5. Fix and verification status: Verify the lesson and assignment prompt belong to the enrolled course; reject blank answers and non-HTTP links. Fixed & Verified
+
+BUG-008 Assignment grades exceed their valid range
+1. Bug ID and title: BUG-008 — Assignment grades exceed their valid range
+2. Location and steps: backend/src/services/admin.service.js. As an admin, review an assignment with grade 101 or a negative grade.
+3. Expected versus actual: Grades must be numeric values from 0 through 100. The original accepts 101.
+4. Severity and evidence: Medium; P2. HTTP regression rejects -1, 101, a numeric string, and an invalid review status; grade 85 succeeds.
+5. Fix and verification status: Validate the grade range and run schema validation during updates. Fixed & Verified
+
+BUG-009 Admin assignment course filter is ignored
+1. Bug ID and title: BUG-009 — Admin assignment course filter is ignored
+2. Location and steps: backend/src/controllers/admin.controller.js and backend/src/services/admin.service.js. GET /api/admin/assignments?courseId=<an unrelated valid course identifier>.
+3. Expected versus actual: The response should exclude assignments from other courses. The original returns unrelated assignments because the controller drops the query and the service uses the wrong field.
+4. Severity and evidence: Medium; P2. HTTP regression checks the matching course and a nonmatching course.
+5. Fix and verification status: Forward req.query and filter on the course field. Fixed & Verified
+
+BUG-010 Students can change another student progress
+1. Bug ID and title: BUG-010 — Students can change another student progress
+2. Location and steps: backend/src/controllers/enrollment.controller.js and backend/src/services/enrollment.service.js. Student B sends PATCH /api/enrollments/<student A enrollment>/complete-lesson with a valid lesson ID.
+3. Expected versus actual: The request should fail without changing student A progress. The original returns 200 and updates the other enrollment.
+4. Severity and evidence: High; P1. HTTP regression verifies cross-student access is rejected.
+5. Fix and verification status: Pass the authenticated student ID and query the enrollment by both ID and owner. Fixed & Verified
+
+BUG-011 Arbitrary lesson identifiers inflate progress
+1. Bug ID and title: BUG-011 — Arbitrary lesson identifiers inflate progress
+2. Location and steps: backend/src/services/enrollment.service.js. Complete the real lesson, then submit another completion using an identifier outside the course.
+3. Expected versus actual: Only lessons in the course should count and progress should stay at most 100 percent. The original accepts the identifier and reaches 200 percent.
+4. Severity and evidence: Medium; P2. HTTP regression rejects an unknown lesson, checks idempotence, and reads persisted progress from MongoDB.
+5. Fix and verification status: Validate course lesson membership, deduplicate stored IDs, and remove stale IDs before counting. Fixed & Verified
+
+BUG-012 Course updates bypass required field validation
+1. Bug ID and title: BUG-012 — Course updates bypass required field validation
+2. Location and steps: backend/src/services/admin.service.js. As an admin, PATCH a course with an empty title.
+3. Expected versus actual: Required fields should remain valid. The original returns 200 with an empty title.
+4. Severity and evidence: Medium; P2. HTTP regression rejects an empty title and verifies the original title remains stored.
+5. Fix and verification status: Enable runValidators for course updates and disallow negative prices in the schema. Fixed & Verified
+
+BUG-013 Banned users retain access with existing tokens
+1. Bug ID and title: BUG-013 — Banned users retain access with existing tokens
+2. Location and steps: backend/src/middlewares/authMiddleware.js and backend/src/services/auth.service.js. Ban a student, then request GET /api/auth/me with the token issued before the ban.
+3. Expected versus actual: A banned account should be refused. The original returns 200 with isBanned true.
+4. Severity and evidence: High; P1. HTTP regression checks both login and an existing token after a ban.
+5. Fix and verification status: Check current account state on protected requests and reject banned-user login. Fixed & Verified
+
+BUG-014 Demoted admins retain privileges until token expiry
+1. Bug ID and title: BUG-014 — Demoted admins retain privileges until token expiry
+2. Location and steps: backend/src/middlewares/authMiddleware.js. Change an admin role to student, then use the old token on an admin endpoint.
+3. Expected versus actual: The current student role should block admin access. The original trusts the old role in the token and returns 200.
+4. Severity and evidence: High; P1. HTTP regression demotes an admin and confirms the old token receives 403.
+5. Fix and verification status: Load the current role from the user record for each authenticated request. Fixed & Verified
+
+BUG-015 Validation response omits field error details
+1. Bug ID and title: BUG-015 — Validation response omits field error details
+2. Location and steps: backend/src/middlewares/validate.js. Register with a one-character name, invalid email, and short password.
+3. Expected versus actual: The 400 response should include field issues. The original only returns a generic message because Zod 4 exposes issues, not errors.
+4. Severity and evidence: Medium; P2. HTTP regression verifies an errors array containing at least three issues.
+5. Fix and verification status: Return err.issues. Fixed & Verified
+
+BUG-016 Saved login token cannot be read back
+1. Bug ID and title: BUG-016 — Saved login token cannot be read back
+2. Location and steps: frontend/src/utils/auth.js. Call saveToken, then getToken, or log in and reload the application.
+3. Expected versus actual: The saved token should be readable. The original saves user_token but reads token, so getToken returns null.
+4. Severity and evidence: High; P1. Frontend regression fails on the original and passes after the fix.
+5. Fix and verification status: Use token consistently and remove both old and current keys on logout. Fixed & Verified
+
+BUG-017 Enrollment reducer discards the fetched array
+1. Bug ID and title: BUG-017 — Enrollment reducer discards the fetched array
+2. Location and steps: frontend/src/store/slices/enrollmentSlice.js. Fulfill fetchMyEnrollments with the array returned by GET /api/enrollments/my.
+3. Expected versus actual: State should contain the array. The original reads action.payload.data and sets enrollments to undefined.
+4. Severity and evidence: High; P1. Frontend regression verifies array storage and a subsequent progress update.
+5. Fix and verification status: Assign action.payload directly. Fixed & Verified
+
+BUG-018 Course details display the wrong price
+1. Bug ID and title: BUG-018 — Course details display the wrong price
+2. Location and steps: frontend/src/pages/CousrseDetails/CourseDetails.jsx. Open course details for a course whose stored price is 1234.
+3. Expected versus actual: The details price should match the card and API. The original renders 123400.
+4. Severity and evidence: Medium; P2. A real component render fails on the original and passes after the fix.
+5. Fix and verification status: Display the stored price using locale number formatting. Fixed & Verified
+
+BUG-019 Long course titles cannot wrap
+1. Bug ID and title: BUG-019 — Long course titles cannot wrap
+2. Location and steps: frontend/src/components/CourseCard/CourseCard.jsx. Render a course card with a title longer than its container width.
+3. Expected versus actual: Titles should wrap. The original explicitly applies whitespace-nowrap and overflow-visible.
+4. Severity and evidence: Low; P3. Component rendering verifies the corrected classes. A pixel-level mobile browser check remains pending.
+5. Fix and verification status: Use break-words and min-w-0 instead of the no-wrap rules. Fixed & Verified with layout review pending
+
+BUG-020 Backend environment example contains frontend settings
+1. Bug ID and title: BUG-020 — Backend environment example contains frontend settings
+2. Location and steps: backend/.env.example. Copy the supplied backend .env.example to .env and attempt to start the backend.
+3. Expected versus actual: The example should provide MONGODB_URI, JWT_SECRET, and server configuration. It originally contains only VITE_API_BASE_URL, so database configuration is missing.
+4. Severity and evidence: High; P2. The API suite uses explicit isolated settings. A fresh install with user-supplied database credentials remains a deployment check.
+5. Fix and verification status: Provide backend-specific placeholders and use a local frontend API default in the frontend example. Fixed & Verified by configuration review
+
+BUG-021 Selected batch index is sent as a database identifier
+1. Bug ID and title: BUG-021 — Selected batch index is sent as a database identifier
+2. Location and steps: frontend/src/pages/CousrseDetails/CourseDetails.jsx. Select the first batch and enroll.
+3. Expected versus actual: The request should contain that batch ObjectId. The original sends the string 0 and the first-batch confirmation is also hidden by a falsy check.
+4. Severity and evidence: Medium; P2. Implementation is complete and API tests accept real batch IDs. Browser click-through verification is pending.
+5. Fix and verification status: Map the selected index to batch._id and test selectedBatchId against null. Unresolved verification
+
+BUG-022 Completed lesson button compares an object to identifiers
+1. Bug ID and title: BUG-022 — Completed lesson button compares an object to identifiers
+2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Complete a lesson and inspect the Mark as Complete button for the same lesson.
+3. Expected versus actual: The button should show Completed and be disabled. The original calls completedLessons.includes(lesson) although stored values are lesson IDs.
+4. Severity and evidence: Medium; P2. Implementation is complete; browser interaction verification is pending.
+5. Fix and verification status: Compare lesson._id and disable the button while completion is in progress. Unresolved verification
+
+BUG-023 Video player uses a fixed narrow width and excessive height
+1. Bug ID and title: BUG-023 — Video player uses a fixed narrow width and excessive height
+2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Inspect the lesson video container at desktop and mobile widths.
+3. Expected versus actual: The video should fill its container with a useful aspect ratio. The original hardcodes width 300px and height 700px.
+4. Severity and evidence: Low; P3. The fixed dimensions were removed and production compilation passes. Pixel-level browser review is pending.
+5. Fix and verification status: Use w-full with aspect-video. Unresolved verification
+
+BUG-024 All navigation links appear active
+1. Bug ID and title: BUG-024 — All navigation links appear active
+2. Location and steps: frontend/src/components/shared/Navbar.jsx. Open any route and inspect the desktop navigation.
+3. Expected versus actual: Only the current route should have active styling. The original also checks pathname.startsWith slash, which is true for every route.
+4. Severity and evidence: Low; P3. The condition is corrected in source; interactive visual verification is pending.
+5. Fix and verification status: Use the NavLink isActive value. Unresolved verification
+
+BUG-025 Per-lesson assignment and quiz state survives lesson switches
+1. Bug ID and title: BUG-025 — Per-lesson assignment and quiz state survives lesson switches
+2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Open a submitted lesson, then switch to a different lesson containing the same form type.
+3. Expected versus actual: The new lesson should have its own answers and submission state. The original reuses component state without a lesson key.
+4. Severity and evidence: Medium; P2. Implementation is complete; cross-lesson browser interaction verification is pending.
+5. Fix and verification status: Key the assignment and quiz components by lesson._id. Unresolved verification
+
+BUG-026 Protected routes allow client bypass flags and failed verification
+1. Bug ID and title: BUG-026 — Protected routes allow client bypass flags and failed verification
+2. Location and steps: frontend/src/routes/ProtectedRoute.jsx. Set dev_bypass to true or use bypass=true, or make the session verification request fail while a token exists.
+3. Expected versus actual: Protected content should require a verified session. The original accepts the bypass or treats a failed check as valid when a token exists.
+4. Severity and evidence: High; P1. Unauthenticated server rendering passes, but it does not exercise browser effects. Backend authorization is independently verified by HTTP tests.
+5. Fix and verification status: Remove bypass paths, fail closed, and show a retryable verification error. Unresolved verification
+
+BUG-027 Search submission can request the previous page
+1. Bug ID and title: BUG-027 — Search submission can request the previous page
+2. Location and steps: frontend/src/components/CourseCard/CoursesSection.jsx. Go to a later page, enter a search term, and submit.
+3. Expected versus actual: The search should request page one consistently. The original starts a request with the stale page before the state update takes effect.
+4. Severity and evidence: Medium; P2. Implementation is complete; browser request-sequence verification is pending.
+5. Fix and verification status: Keep a submitted search value, apply page resets in handlers, and ignore stale responses. Unresolved verification
+
+BUG-028 Lesson completion returns before the save finishes
+1. Bug ID and title: BUG-028 — Lesson completion returns before the save finishes
+2. Location and steps: backend/src/services/enrollment.service.js. Inspect the completion service while the database save is still pending.
+3. Expected versus actual: The operation should resolve after persistence succeeds. The original calls enrollment.save without awaiting it.
+4. Severity and evidence: Medium; P2. Source confirms awaited persistence; the HTTP regression reads the persisted result after completion.
+5. Fix and verification status: Await enrollment.save before returning. Fixed & Verified
+
+BUG-029 Course player can retain stale data and hide completion failures
+1. Bug ID and title: BUG-029 — Course player can retain stale data and hide completion failures
+2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Switch between course IDs or make the enrollment or completion request fail.
+3. Expected versus actual: The page should show current data or a visible error. The original can keep the previous course and logs failures only in the console.
+4. Severity and evidence: Medium; P2. Production compilation and lint pass. Browser error-path verification is pending.
+5. Fix and verification status: Coordinate course and enrollment loading, ignore stale responses, reset selection, and display completion failures. Unresolved verification
