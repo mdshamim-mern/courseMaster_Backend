@@ -1,7 +1,11 @@
 CourseMaster Assignment 4 Bug Report
 Prepared for mdshamim-mern on 31 October 2026
 
-This report records 29 reproducible or source-substantiated issues in CourseMaster, their fixes, and the available verification evidence. Backend behavior was tested against an isolated local MongoDB instance. Frontend checks use the real modules and component rendering. Eight interaction issues and pixel-level layouts still need browser verification because browser automation was unavailable. No claim of complete browser verification is made.
+This report records 31 reproducible or source-substantiated CourseMaster defects, their fixes, and their verification evidence. All eight previously pending browser scenarios now have passing results. The checks used isolated local MongoDB data and an isolated Chrome profile; the original upstream repositories were not modified.
+
+Verification passed: 19 backend HTTP scenarios, 7 frontend regression checks, 21 problem-solving tests covering all 20 assigned problems, and all 8 browser scenarios. Seven browser scenarios passed in the full run; the session-recovery scenario passed in a targeted rerun after its transient-error logout defect was fixed. ESLint and the production build pass. The build has a nonfatal DaisyUI CSS optimization warning for @property.
+
+The mobile and desktop checks used widths of 390 and 1366 pixels. External YouTube iframe requests were blocked during layout verification, so these results do not claim third-party video playback verification. No production deployment was performed. No private credentials or .env files were committed.
 
 BUG-001 Valid passwords cannot log in
 1. Bug ID and title: BUG-001 — Valid passwords cannot log in
@@ -133,8 +137,8 @@ BUG-019 Long course titles cannot wrap
 1. Bug ID and title: BUG-019 — Long course titles cannot wrap
 2. Location and steps: frontend/src/components/CourseCard/CourseCard.jsx. Render a course card with a title longer than its container width.
 3. Expected versus actual: Titles should wrap. The original explicitly applies whitespace-nowrap and overflow-visible.
-4. Severity and evidence: Low; P3. Component rendering verifies the corrected classes. A pixel-level mobile browser check remains pending.
-5. Fix and verification status: Use break-words and min-w-0 instead of the no-wrap rules. Fixed & Verified with layout review pending
+4. Severity and evidence: Low; P3. 390px and 1366px browser checks verified title bounds and no horizontal overflow; screenshots were visually reviewed.
+5. Fix and verification status: Use break-words and min-w-0 instead of the no-wrap rules. Fixed & Verified
 
 BUG-020 Backend environment example contains frontend settings
 1. Bug ID and title: BUG-020 — Backend environment example contains frontend settings
@@ -147,50 +151,50 @@ BUG-021 Selected batch index is sent as a database identifier
 1. Bug ID and title: BUG-021 — Selected batch index is sent as a database identifier
 2. Location and steps: frontend/src/pages/CousrseDetails/CourseDetails.jsx. Select the first batch and enroll.
 3. Expected versus actual: The request should contain that batch ObjectId. The original sends the string 0 and the first-batch confirmation is also hidden by a falsy check.
-4. Severity and evidence: Medium; P2. Implementation is complete and API tests accept real batch IDs. Browser click-through verification is pending.
-5. Fix and verification status: Map the selected index to batch._id and test selectedBatchId against null. Unresolved verification
+4. Severity and evidence: Medium; P2. Browser enrollment returned 201 and its actual POST body contained the selected batch ObjectId. Screenshot: bug-021-enrollment.png.
+5. Fix and verification status: Map the selected index to batch._id and test selectedBatchId against null. Fixed & Verified
 
 BUG-022 Completed lesson button compares an object to identifiers
 1. Bug ID and title: BUG-022 — Completed lesson button compares an object to identifiers
 2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Complete a lesson and inspect the Mark as Complete button for the same lesson.
 3. Expected versus actual: The button should show Completed and be disabled. The original calls completedLessons.includes(lesson) although stored values are lesson IDs.
-4. Severity and evidence: Medium; P2. Implementation is complete; browser interaction verification is pending.
-5. Fix and verification status: Compare lesson._id and disable the button while completion is in progress. Unresolved verification
+4. Severity and evidence: Medium; P2. Browser completion changed the button to disabled Completed and stayed completed after a reload. Screenshot: bug-022-completed.png.
+5. Fix and verification status: Compare lesson._id and disable the button while completion is in progress. Fixed & Verified
 
 BUG-023 Video player uses a fixed narrow width and excessive height
 1. Bug ID and title: BUG-023 — Video player uses a fixed narrow width and excessive height
 2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Inspect the lesson video container at desktop and mobile widths.
 3. Expected versus actual: The video should fill its container with a useful aspect ratio. The original hardcodes width 300px and height 700px.
-4. Severity and evidence: Low; P3. The fixed dimensions were removed and production compilation passes. Pixel-level browser review is pending.
-5. Fix and verification status: Use w-full with aspect-video. Unresolved verification
+4. Severity and evidence: Low; P3. Real browser measurements verified a 16:9 iframe, container width, and no horizontal overflow at 390px and 1366px. Screenshots: bug-023-video-390.png and bug-023-video-1366.png. YouTube iframe requests were intentionally blocked; playback was not tested.
+5. Fix and verification status: Use w-full with aspect-video. Fixed & Verified
 
 BUG-024 All navigation links appear active
 1. Bug ID and title: BUG-024 — All navigation links appear active
 2. Location and steps: frontend/src/components/shared/Navbar.jsx. Open any route and inspect the desktop navigation.
 3. Expected versus actual: Only the current route should have active styling. The original also checks pathname.startsWith slash, which is true for every route.
-4. Severity and evidence: Low; P3. The condition is corrected in source; interactive visual verification is pending.
-5. Fix and verification status: Use the NavLink isActive value. Unresolved verification
+4. Severity and evidence: Low; P3. Browser checks verified Courses active on the course list and Home active after navigation, with the other link inactive. Screenshot: bug-024-active-navigation.png.
+5. Fix and verification status: Use the NavLink isActive value. Fixed & Verified
 
 BUG-025 Per-lesson assignment and quiz state survives lesson switches
 1. Bug ID and title: BUG-025 — Per-lesson assignment and quiz state survives lesson switches
 2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Open a submitted lesson, then switch to a different lesson containing the same form type.
 3. Expected versus actual: The new lesson should have its own answers and submission state. The original reuses component state without a lesson key.
-4. Severity and evidence: Medium; P2. Implementation is complete; cross-lesson browser interaction verification is pending.
-5. Fix and verification status: Key the assignment and quiz components by lesson._id. Unresolved verification
+4. Severity and evidence: Medium; P2. Browser checks verified draft reset, quiz selection reset, no duplicate assignment form, and submission display isolation when switching lessons. Screenshot: bug-025-independent-lesson-state.png.
+5. Fix and verification status: Use distinct component-and-lesson keys for assignment and quiz components so state resets without sibling-key collisions. Fixed & Verified
 
 BUG-026 Protected routes allow client bypass flags and failed verification
 1. Bug ID and title: BUG-026 — Protected routes allow client bypass flags and failed verification
 2. Location and steps: frontend/src/routes/ProtectedRoute.jsx. Set dev_bypass to true or use bypass=true, or make the session verification request fail while a token exists.
 3. Expected versus actual: Protected content should require a verified session. The original accepts the bypass or treats a failed check as valid when a token exists.
-4. Severity and evidence: High; P1. Unauthenticated server rendering passes, but it does not exercise browser effects. Backend authorization is independently verified by HTTP tests.
-5. Fix and verification status: Remove bypass paths, fail closed, and show a retryable verification error. Unresolved verification
+4. Severity and evidence: High; P1. Browser checks rejected unauthenticated bypass flags, displayed a 503 verification error without granting access, and recovered through Retry. Obsolete token and bypass buttons were removed. Screenshot: bug-026-failed-verification.png.
+5. Fix and verification status: Remove bypass paths, fail closed, and show a retryable verification error. Fixed & Verified
 
 BUG-027 Search submission can request the previous page
 1. Bug ID and title: BUG-027 — Search submission can request the previous page
 2. Location and steps: frontend/src/components/CourseCard/CoursesSection.jsx. Go to a later page, enter a search term, and submit.
 3. Expected versus actual: The search should request page one consistently. The original starts a request with the stale page before the state update takes effect.
-4. Severity and evidence: Medium; P2. Implementation is complete; browser request-sequence verification is pending.
-5. Fix and verification status: Keep a submitted search value, apply page resets in handlers, and ignore stale responses. Unresolved verification
+4. Severity and evidence: Medium; P2. Browser checks started on page two, submitted a new search, verified page=1 in the request, and displayed the matching course. Screenshot: bug-027-search-page-reset.png.
+5. Fix and verification status: Keep a submitted search value, apply page resets in handlers, and ignore stale responses. Fixed & Verified
 
 BUG-028 Lesson completion returns before the save finishes
 1. Bug ID and title: BUG-028 — Lesson completion returns before the save finishes
@@ -203,5 +207,21 @@ BUG-029 Course player can retain stale data and hide completion failures
 1. Bug ID and title: BUG-029 — Course player can retain stale data and hide completion failures
 2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Switch between course IDs or make the enrollment or completion request fail.
 3. Expected versus actual: The page should show current data or a visible error. The original can keep the previous course and logs failures only in the console.
-4. Severity and evidence: Medium; P2. Production compilation and lint pass. Browser error-path verification is pending.
-5. Fix and verification status: Coordinate course and enrollment loading, ignore stale responses, reset selection, and display completion failures. Unresolved verification
+4. Severity and evidence: Medium; P2. Browser checks displayed controlled enrollment and completion errors, recovered successfully, and showed the correct course after changing course IDs. Screenshot: bug-029-completion-error.png.
+5. Fix and verification status: Coordinate course and enrollment loading, ignore stale responses, reset selection, and display completion failures. Fixed & Verified
+
+BUG-030 Quiz questions share one radio group
+1. Bug ID and title: BUG-030 — Quiz questions share one radio group
+2. Location and steps: frontend/src/pages/CoursePlayer/CoursePlayer.jsx. Choose an option for question one, then choose an option for question two in the same quiz.
+3. Expected versus actual: Both questions should keep their selected radio options. The original gives every input the same quiz-option name, so the browser treats all questions as one group.
+4. Severity and evidence: Medium; P2. The real browser selected answers to two questions and verified two checked radio inputs at the same time before testing lesson switching.
+5. Fix and verification status: Build the radio group name from the lesson identifier and question index. Fixed & Verified
+
+BUG-031 Temporary profile failures log out valid sessions
+1. Bug ID and title: BUG-031 — Temporary profile failures log out valid sessions
+2. Location and steps: frontend/src/components/shared/Navbar.jsx and frontend/src/store/slices/authSlice.js. Log in successfully, then make the profile verification endpoint return a temporary 503 response.
+3. Expected versus actual: The session token should remain available while protected content stays blocked until verification succeeds. The original clears the token for every request error and unexpectedly redirects to login.
+4. Severity and evidence: Medium; P2. A targeted browser check verified the 503 error and successful Retry. A new frontend regression verifies that 503 preserves the session while 401 clears it.
+5. Fix and verification status: Clear session state only for 401 or 403 authentication failures; preserve it for transient server or network errors and allow Retry. Fixed & Verified
+
+Report verification completed on 31 October 2026.

@@ -2,17 +2,18 @@
 > course-master-frontend@0.0.0 test
 > node --test tests/*.test.cjs
 
-✔ Token survives save/read and is removed on logout (316.9057ms)
-✔ Enrollment reducer preserves an array response and permits progress updates (302.8867ms)
-✔ Course details display the stored price without multiplying it (154.3644ms)
-✔ Course card allows long titles to wrap (89.1981ms)
-✔ A local development bypass flag does not render protected content without a token (12.9332ms)
-✔ API adapter receives Bearer authentication (8.8759ms)
-ℹ tests 6
+✔ Token survives save/read and is removed on logout (487.5925ms)
+✔ Enrollment reducer preserves an array response and permits progress updates (4029.6482ms)
+✔ Course details display the stored price without multiplying it (759.5706ms)
+✔ Course card allows long titles to wrap (517.9527ms)
+✔ A local development bypass flag does not render protected content without a token (31.3168ms)
+✔ API adapter receives Bearer authentication (10.1854ms)
+✔ Temporary profile failures preserve the session while 401 clears it (12.7963ms)
+ℹ tests 7
 ℹ suites 0
-ℹ pass 6
+ℹ pass 7
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 2134.0954
+ℹ duration_ms 11388.4074

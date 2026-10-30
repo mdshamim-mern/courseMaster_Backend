@@ -1,0 +1,61 @@
+
+> course-master-frontend@0.0.0 test:browser
+> playwright test --config playwright.config.cjs
+
+
+Running 8 tests using 1 worker
+
+(node:17620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\browser\assignment.spec.cjs:11:1 › BUG-021 first batch enrollment sends its actual identifier (21.3s)
+  ok 2 tests\browser\assignment.spec.cjs:12:1 › BUG-022 completed lesson button is disabled and persists after reload (10.0s)
+  ok 3 tests\browser\assignment.spec.cjs:13:1 › BUG-023 and BUG-019 mobile and desktop layout fit their containers (13.6s)
+  ok 4 tests\browser\assignment.spec.cjs:14:1 › BUG-024 only the current desktop navigation link is active (3.1s)
+  ok 5 tests\browser\assignment.spec.cjs:15:1 › BUG-025 lesson switching resets drafts, quiz choices, and submission display (8.2s)
+  x  6 tests\browser\assignment.spec.cjs:16:1 › BUG-026 bypass flags and failed session verification cannot grant access (23.7s)
+(node:22104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 7 tests\browser\assignment.spec.cjs:17:1 › BUG-027 searching from page two requests and displays page one (5.2s)
+  ok 8 tests\browser\assignment.spec.cjs:18:1 › BUG-029 course loading and completion failures are visible and recoverable (16.6s)
+
+
+  1) tests\browser\assignment.spec.cjs:16:1 › BUG-026 bypass flags and failed session verification cannot grant access
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "Simulated session verification failure"
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 15000ms
+      - waiting for getByRole('alert')
+
+
+      14 | test('BUG-024 only the current desktop navigation link is active',async({page})=>{await page.goto('/courses');const home=page.getByRole('banner').getByRole('link',{name:'Home',exact:true});const courses=page.getByRole('banner').getByRole('link',{name:'Courses',exact:true});await expect(courses).toHaveClass(/(^|\s)text-primary(\s|$)/);await expect(home).not.toHaveClass(/(^|\s)text-primary(\s|$)/);await home.click();await expect(home).toHaveClass(/(^|\s)text-primary(\s|$)/);await expect(courses).not.toHaveClass(/(^|\s)text-primary(\s|$)/);await capture(page,'bug-024-active-navigation');});
+      15 | test('BUG-025 lesson switching resets drafts, quiz choices, and submission display',async({page})=>{await login(page);await page.goto(player);const textarea=page.getByPlaceholder('Enter your answer or paste Google Drive link');await textarea.fill('Draft for the first lesson');await page.locator('input[name="quiz-'+fixtures.lessonIds[0]+'-0"]').nth(1).check();await page.locator('input[name="quiz-'+fixtures.lessonIds[0]+'-1"]').nth(0).check();await expect(page.locator('input[type="radio"]:checked')).toHaveCount(2);await page.getByRole('button',{name:'Lesson Two',exact:false}).click();await expect(textarea).toHaveValue('');await expect(page.locator('input[type="radio"]:checked')).toHaveCount(0);await expect(page.getByText('Explain lesson two',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Lesson One',exact:false}).click();await expect(textarea).toHaveValue('');await page.locator('input[name="quiz-'+fixtures.lessonIds[0]+'-0"]').nth(1).check();await page.locator('input[name="quiz-'+fixtures.lessonIds[0]+'-1"]').nth(0).check();await page.getByRole('button',{name:'Submit Quiz',exact:true}).click();await expect(page.getByText('Previously Submitted',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Lesson Two',exact:false}).click();await expect(page.getByText('Previously Submitted',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Submit Quiz',exact:true})).toBeVisible();await capture(page,'bug-025-independent-lesson-state');});
+    > 16 | test('BUG-026 bypass flags and failed session verification cannot grant access',async({page})=>{await page.addInitScript(()=>localStorage.setItem('dev_bypass','true'));await page.goto('/student?bypass=true');await expect(page).toHaveURL(/\/login$/);await expect(page.getByRole('button',{name:'Sign In',exact:true})).toBeVisible();await login(page);control({failAuth:true});await page.goto('/student?bypass=true');await expect(page.getByRole('alert')).toContainText('Simulated session verification failure');await capture(page,'bug-026-failed-verification');control({});await page.getByRole('button',{name:'Retry',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(0);await expect(page.getByRole('button',{name:'Retry',exact:true})).toHaveCount(0);});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ^
+      17 | test('BUG-027 searching from page two requests and displays page one',async({page})=>{await page.goto('/courses');await page.getByPlaceholder('Search by title / instructor').fill('Browser Course');await page.getByRole('button',{name:'Search',exact:true}).click();await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page.getByText('Page 2 / 2',{exact:true})).toBeVisible();await page.getByPlaceholder('Search by title / instructor').fill('Browser Course 02');const requestPromise=page.waitForRequest(r=>r.url().includes('/api/courses?')&&new URL(r.url()).searchParams.get('search')==='Browser Course 02');await page.getByRole('button',{name:'Search',exact:true}).click();const url=new URL((await requestPromise).url());expect(url.searchParams.get('page')).toBe('1');await expect(page.getByRole('heading',{name:'Browser Course 02',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Browser Course 09',exact:true})).toHaveCount(0);await capture(page,'bug-027-search-page-reset');});
+      18 | test('BUG-029 course loading and completion failures are visible and recoverable',async({page})=>{await login(page);control({failEnrollments:true});await page.goto(player);await expect(page.getByRole('alert')).toContainText('Simulated enrollment loading failure');control({});await page.reload();await expect(page.getByRole('heading',{name:'Lesson One',exact:true})).toBeVisible();await page.getByRole('button',{name:'Lesson Two',exact:false}).click();control({failCompletion:true});await page.getByRole('button',{name:'Mark as Complete',exact:false}).click();await expect(page.getByRole('alert')).toContainText('Simulated lesson completion failure');await capture(page,'bug-029-completion-error');control({});await page.getByRole('button',{name:'Mark as Complete',exact:false}).click();await expect(page.getByRole('button',{name:'Completed',exact:false})).toBeDisabled();await page.goto('/courses/'+fixtures.otherCourseId+'/player');await expect(page.getByRole('heading',{name:'Browser Course 02',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Browser Course One With A Long Title For Responsive Layout Testing',exact:true})).toHaveCount(0);});
+      19 |
+        at C:\Users\User\Documents\Codex\2026-10-31\a\outputs\course-master\frontend\tests\browser\assignment.spec.cjs:16:452
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\browser-results\assignment-BUG-026-bypass--33da3-ication-cannot-grant-access\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\browser-results\assignment-BUG-026-bypass--33da3-ication-cannot-grant-access\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\browser-results\assignment-BUG-026-bypass--33da3-ication-cannot-grant-access\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\browser-results\assignment-BUG-026-bypass--33da3-ication-cannot-grant-access\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\browser\assignment.spec.cjs:16:1 › BUG-026 bypass flags and failed session verification cannot grant access
+  7 passed (2.0m)

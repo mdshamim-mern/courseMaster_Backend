@@ -1,0 +1,21 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const { createRequire } = require("node:module");
+const req = createRequire(path.resolve(__dirname, "../../package.json"));
+const express = req("express");
+const cors = req("cors");
+if (!process.env.MONGODB_URI || !new URL(process.env.MONGODB_URI).pathname.endsWith("_test") || !process.env.COURSEMASTER_BROWSER_CONTROL) throw Error("Use an isolated _test database and set COURSEMASTER_BROWSER_CONTROL.");
+process.env.JWT_SECRET = "browser-preview-only-secret";
+process.env.NODE_ENV = "test";
+const app = req("./app");
+const wrapper = express();
+wrapper.use(cors());
+wrapper.use((request, response, next) => {
+  const state = JSON.parse(fs.readFileSync(process.env.COURSEMASTER_BROWSER_CONTROL, "utf8"));
+  if (state.failAuth && request.path === "/api/auth/me") return response.status(503).json({ message: "Simulated session verification failure" });
+  if (state.failEnrollments && request.path === "/api/enrollments/my") return response.status(503).json({ message: "Simulated enrollment loading failure" });
+  if (state.failCompletion && request.path.endsWith("/complete-lesson")) return response.status(503).json({ message: "Simulated lesson completion failure" });
+  next();
+});
+wrapper.use(app);
+wrapper.listen(5001, "127.0.0.1", () => console.log("Browser preview API ready on 5001"));
