@@ -1,5 +1,6 @@
 const AssignmentSubmission = require("../models/AssignmentSubmission");
 const Enrollment = require("../models/Enrollment");
+const Course = require("../models/Course");
 
 const submitAssignment = async (studentId, payload) => {
   const { courseId, lessonId, answerType, answer } = payload;
@@ -8,12 +9,22 @@ const submitAssignment = async (studentId, payload) => {
   const enrolled = await Enrollment.findOne({ student: studentId, course: courseId });
   if (!enrolled) throw new Error("You are not enrolled in this course");
 
+  const course = await Course.findById(courseId);
+  const lesson = course?.syllabus.flatMap((module) => module.lessons).find((item) => String(item._id) === String(lessonId));
+  if (!lesson?.assignmentPrompt) throw new Error("Assignment not found in this course");
+  if (typeof answer !== "string" || !answer.trim()) throw new Error("Answer is required");
+  if (!["text", "link"].includes(answerType)) throw new Error("Invalid answer type");
+  if (answerType === "link") {
+    let url;
+    try { url = new URL(answer); } catch { throw new Error("Provide a valid HTTP or HTTPS link"); }
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error("Provide a valid HTTP or HTTPS link");
+  }
   const submission = await AssignmentSubmission.create({
     student: studentId,
     course: courseId,
     lessonId,
     answerType,
-    answer,
+    answer: answer.trim(),
   });
 
   return submission;

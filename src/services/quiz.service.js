@@ -23,6 +23,10 @@ const submitQuiz = async (studentId, payload) => {
   }
   if (!quiz) throw new Error("Lesson not found");
   if (quiz.length === 0) throw new Error("No quiz in this lesson");
+  if (!Array.isArray(answers) || answers.length !== quiz.length ||
+      answers.some((answer, i) => !Number.isInteger(answer) || answer < 0 || answer >= quiz[i].options.length)) {
+    throw new Error("Provide one valid answer for every quiz question");
+  }
 
   let score = 0;
   quiz.forEach((q, i) => {
@@ -30,8 +34,7 @@ const submitQuiz = async (studentId, payload) => {
   });
 
   const total = quiz.length;
-  // Code-4 bug: multiplied by 10 instead of 100
-  const percent = Math.round((score / total) * 10);
+  const percent = Math.round((score / total) * 100);
 
   // Check if student already submitted this quiz (optional - allow retakes)
   // If you want to prevent duplicates, uncomment the following:

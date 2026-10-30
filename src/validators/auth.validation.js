@@ -3,14 +3,14 @@
 const { z } = require("zod");
 
 const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
+  name: z.string().trim().min(2),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(6),
   adminKey: z.string().optional(), // Optional admin registration key
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(6),
 });
 

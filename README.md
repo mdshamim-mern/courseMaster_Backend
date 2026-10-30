@@ -98,7 +98,7 @@ FRONTEND_URL=http://localhost:5173
 
 ## API Documentation
 
-Base URL: `http://localhost:5000/api/api`
+Base URL: `http://localhost:5000/api`
 
 ### Authentication Endpoints
 
@@ -406,3 +406,30 @@ The backend is deployed on **Vercel**. Make sure to set all environment variable
 - Uses `nodemon` for auto-restart during development
 - MongoDB connection is handled via Mongoose
 
+
+## Assignment fixes and verification
+
+The corrected implementation validates hashed passwords, admin registration keys, current account roles and bans, enrollment ownership, batch membership, lesson membership, quiz answers, assignment submissions, grades, and course updates. Lesson progress is saved before success is returned.
+
+### Run locally
+
+Use Node.js 20.19+ or 22.12+ and a running MongoDB server. Run `npm ci`, copy `.env.example` to `.env`, and set `MONGODB_URI`, `JWT_SECRET`, and optionally `ADMIN_REGISTRATION_KEY`. Use unique local values for secrets. Start the API with `npm start`. The default API base is `http://localhost:5000/api`.
+
+The email settings are optional. Leave them unset for local assignment verification. Never commit `.env` or credentials. The existing `npm run seed` command clears data; use it only with a disposable local database.
+
+### Regression tests
+
+Set `MONGODB_URI` to a separate local database named `coursemaster_assignment_test`, then run `npm test`. The suite creates synthetic users and courses in that test database. It does not use production data or send welcome emails. It refuses to start unless the database name is the dedicated test name.
+
+PowerShell example:
+
+```powershell
+$env:MONGODB_URI = "mongodb://127.0.0.1:27017/coursemaster_assignment_test"
+npm test
+```
+
+Tests cover authentication, authorization, registration keys, validation errors, first-time enrollment, duplicate prevention, persisted lesson completion, cross-student access, quiz scoring and retakes, malformed answers, assignment validation, course filtering, grading, update validation, account bans, role changes, and CORS preflight.
+
+### Deployment
+
+Use your own hosting account and MongoDB instance. Set production environment variables in the host rather than committing them. The existing Vercel configuration is retained. Configure the frontend to use the deployed API URL ending in `/api`. No production deployment has been performed as part of this local verification.

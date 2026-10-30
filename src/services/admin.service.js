@@ -11,7 +11,7 @@ const createCourse = async (payload) => {
 };
 
 const updateCourse = async (id, payload) => {
-  const course = await Course.findByIdAndUpdate(id, payload, { new: true });
+  const course = await Course.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
   if (!course) throw new Error("Course not found");
   return course;
 };
@@ -36,10 +36,10 @@ const getEnrollments = async (query) => {
     .sort({ createdAt: -1 });
 };
 
-// ✅ NEW: get all assignment submissions (Code-8 bug: queries by courseId instead of course)
+// Get all assignment submissions, optionally filtered by course.
 const getAssignments = async (query = {}) => {
   const filter = {};
-  if (query.courseId) filter.courseId = query.courseId; // Mongoose schema has 'course', not 'courseId'
+  if (query.courseId) filter.course = query.courseId;
 
   const submissions = await AssignmentSubmission.find(filter)
     .populate("student", "name email")
@@ -75,6 +75,9 @@ const getAssignments = async (query = {}) => {
 // review/update an assignment submission (admin)
 const reviewAssignment = async (id, payload, adminId) => {
   const { reviewNotes, grade, status } = payload;
+  if (grade !== undefined && (typeof grade !== "number" || !Number.isFinite(grade) || grade < 0 || grade > 100)) {
+    throw new Error("Grade must be a number between 0 and 100");
+  }
 
   const update = {};
   if (typeof status !== "undefined") update.status = status;
@@ -82,7 +85,7 @@ const reviewAssignment = async (id, payload, adminId) => {
   if (typeof grade !== "undefined") update.grade = grade;
   if (adminId) update.reviewer = adminId;
 
-  const submission = await AssignmentSubmission.findByIdAndUpdate(id, update, { new: true })
+  const submission = await AssignmentSubmission.findByIdAndUpdate(id, update, { new: true, runValidators: true })
     .populate("student", "name email")
     .populate("course", "title")
     .populate("reviewer", "name");

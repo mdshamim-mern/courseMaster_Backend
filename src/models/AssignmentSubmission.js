@@ -13,7 +13,7 @@ const assignmentSubmissionSchema = new Schema(
     // optional review fields set by an admin
     reviewer: { type: Schema.Types.ObjectId, ref: "User" },
     reviewNotes: { type: String },
-    grade: { type: Number },
+    grade: { type: Number, min: 0, max: 100 },
   },
   { timestamps: true }
 );
