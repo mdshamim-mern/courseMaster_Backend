@@ -125,4 +125,19 @@ test('CourseMaster HTTP regression suite', async (t) => {
     const response=await fetch(base+'/admin/courses/'+course._id,{method:'OPTIONS',headers:{Origin:'http://localhost:5173','Access-Control-Request-Method':'DELETE'}});
     assert.equal(response.status,204); assert.match(response.headers.get('access-control-allow-methods'),/DELETE/); assert.match(response.headers.get('access-control-allow-methods'),/PATCH/);
   });
+  await t.test('Unauthenticated course details hide correctIndex and videoUrl', async () => {
+    const pubCourse = await api('/courses/' + course._id, 'GET');
+    assert.equal(pubCourse.status, 200);
+    const lesson = pubCourse.body.syllabus[0].lessons[0];
+    assert.equal(lesson.videoUrl, undefined, 'videoUrl must be hidden for unenrolled users');
+    assert.ok(lesson.quiz && lesson.quiz.length > 0);
+    assert.equal(lesson.quiz[0].correctIndex, undefined, 'correctIndex must be hidden from public quiz');
+  });
+  await t.test('Enrolled student can view course videoUrl but not correctIndex', async () => {
+    const studentCourse = await api('/courses/' + course._id, 'GET', undefined, student.token);
+    assert.equal(studentCourse.status, 200);
+    const lesson = studentCourse.body.syllabus[0].lessons[0];
+    assert.ok(lesson.videoUrl, 'videoUrl must be available to enrolled student');
+    assert.equal(lesson.quiz[0].correctIndex, undefined, 'correctIndex must remain hidden to student');
+  });
 });
