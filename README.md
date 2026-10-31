@@ -436,4 +436,4 @@ Use your own hosting account and MongoDB instance. Set production environment va
 
 ## Bug report and evidence
 
-The full English [bug report](docs/bug-report.html), [plain-text version](docs/bug-report.txt), original API evidence, and automated check transcripts are in [docs](docs). Verification limitations are recorded explicitly. The assignment still requires a Google Docs copy with reviewer access.
+The full English [bug report](docs/bug-report.html), [plain-text version](docs/bug-report.txt), original API evidence, and automated check transcripts are in [docs](docs). Verification limitations are recorded explicitly. The verified [Google Docs report](https://docs.google.com/document/d/1xq3eHo1nc-kxgGWoxa78M-mmtcaDvhGDqQOTBW-2kgY/edit) contains all 31 findings and the completed browser verification results.
